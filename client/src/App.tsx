@@ -1,8 +1,14 @@
+import { RouterProvider } from "react-router";
+import { router } from "./router/router";
+import { ToastContainer } from "react-toastify";
+import { AuthProvider } from "./context/AuthContext";
+
 function App() {
   return (
-    <div>
-      <h1 className="text-xl font-bold text-red-500">Hello World</h1>
-    </div>
+    <AuthProvider>
+      <RouterProvider router={router} />
+      <ToastContainer position="bottom-left" autoClose={3000} />
+    </AuthProvider>
   );
 }
 
