@@ -10,10 +10,15 @@ import devRoutes from "./routes/dev.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+app.set("trust proxy", 1);
+
+const allowedOrigins = [process.env.CLIENT_URL, "http://localhost:5173"].filter(
+  Boolean
+);
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
   })
 );
@@ -24,9 +29,7 @@ mongoose
   .connect(process.env.MONGO_URI, { dbName: "taskmanager" })
   .then(() => {
     console.log("Connected to MongoDB Atlas");
-    app.listen(PORT, () =>
-      console.log(`Server running on http://localhost:${PORT}`)
-    );
+    app.listen(PORT, () => console.log(`Server running on ${PORT}`));
   })
   .catch((err) => console.error("Connection failed:", err.message));
 
