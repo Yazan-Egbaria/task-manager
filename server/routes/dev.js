@@ -4,8 +4,8 @@ import OutboundMail from "../models/OutboundMail.js";
 const router = Router();
 
 router.get("/mailbox", async (req, res) => {
-  if (process.env.NODE_ENV === "production") {
-    return res.status(403).json({ message: "Mailbox disabled in production" });
+  if (process.env.NODE_ENV === "development") {
+    return res.status(403).json({ message: "Mailbox disabled in development" });
   }
 
   const { to, limit = 10 } = req.query;
