@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router";
 import { useState } from "react";
 import { api } from "../lib/api";
 import Button from "../components/Button";
+import { toast } from "react-toastify";
 
 export default function Verify() {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ export default function Verify() {
     setMsg("");
     try {
       await api.post("/auth/verify", { email, code });
-      setMsg("Email verified. You can now log in.");
+      toast.success("Email verified. You can now log in.");
       navigate("/login", { state: { email } });
     } catch (e: any) {
       setMsg(e?.response?.data?.message || "Verification failed");
