@@ -1,4 +1,13 @@
 import OutboundMail from "../models/OutboundMail.js";
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 
 export async function sendVerificationEmail(to, code) {
   const subject = "Your verification code";
@@ -19,8 +28,26 @@ export async function sendVerificationEmail(to, code) {
     subject,
     text,
     html,
-    meta: { provider: "mock", type: "verification" },
+    meta: { provider: "gmail", type: "verification" },
   });
 
-  console.log(`📩 [MOCK EMAIL SAVED] To: ${to} | Code: ${code}`);
+  if (process.env.NODE_ENV === "production") {
+    try {
+      await transporter.sendMail({
+        from: `Task Manager <${process.env.GMAIL_USER}>`,
+        to,
+        subject,
+        html,
+      });
+      console.log(`Email sent to ${to}`);
+    } catch (error) {
+      console.error(`Failed to send email to ${to}:`, error);
+      throw error;
+    }
+  } else {
+    console.log(`[MOCK EMAIL] To: ${to} | Code: ${code}`);
+    console.log(
+      `Check mailbox: http://localhost:4000/api/dev/mailbox?to=${to}`
+    );
+  }
 }

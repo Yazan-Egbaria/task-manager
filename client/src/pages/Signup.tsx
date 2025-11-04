@@ -1,14 +1,24 @@
 import { useState } from "react";
 import { api } from "../lib/api";
-import { Link, useNavigate } from "react-router";
+import { Link, Navigate, useNavigate } from "react-router";
 import Button from "../components/Button";
 import { toast } from "react-toastify";
+import { useAuth } from "../context/AuthContext";
 
 export default function Signup() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
+  const { loading, user } = useAuth();
+
+  if (loading)
+    return (
+      <div className="myHeight flex w-full items-center justify-center">
+        Loading...
+      </div>
+    );
+  if (user) return <Navigate to="/" replace />;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

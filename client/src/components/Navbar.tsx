@@ -1,44 +1,161 @@
-import { Link, useNavigate } from "react-router";
+import { Link, NavLink, useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
+import { useState } from "react";
 
 export default function Navbar() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   async function handleLogout() {
     await logout();
-    navigate("/login");
+    navigate("/");
+    setIsMenuOpen(false);
   }
 
   const username = user?.email?.split("@")[0] || "Guest";
   const displayName = username.charAt(0).toUpperCase() + username.slice(1);
 
+  const menuResponsiveBtns = user ? "justify-between" : "";
+
   return (
     <header className="bg-white shadow-md">
-      <div className="mx-auto flex max-w-4xl items-center justify-between p-4">
-        <Link to="/tasks" className="text-lg font-semibold">
+      <div className="container mx-auto flex items-center justify-between p-4">
+        {/* Logo */}
+        <Link
+          to="/"
+          className="text-lg font-semibold"
+          onClick={() => setIsMenuOpen(false)}
+        >
           Task Manager
         </Link>
 
-        {loading ? (
-          ""
-        ) : user ? (
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">Hello, {displayName}</span>
-            <button
-              onClick={handleLogout}
-              className="cursor-pointer rounded border border-black bg-black px-3 py-1 text-sm text-white transition hover:bg-white hover:text-black"
-            >
-              Logout
-            </button>
-          </div>
-        ) : (
-          <nav className="flex gap-3 text-sm">
-            <Link to="/signup">Sign up</Link>
-            <Link to="/login">Login</Link>
-          </nav>
+        {user && (
+          <NavLink
+            to="/tasks"
+            className={({ isActive }) =>
+              `${isActive ? "opacity-100" : ""} hidden text-sm opacity-50 transition-all duration-300 hover:opacity-100 md:flex`
+            }
+          >
+            Tasks
+          </NavLink>
         )}
+
+        {/* Desktop Menu */}
+        <div className="hidden items-center gap-4 md:flex">
+          {loading ? null : user ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-600">
+                Hello, {displayName}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="cursor-pointer rounded bg-red-400 px-3 py-1 text-sm text-white transition hover:bg-red-500"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <nav className="flex gap-3 text-sm">
+              <Link to="/signup" className="hover:underline">
+                Sign up
+              </Link>
+              <Link to="/login" className="hover:underline">
+                Login
+              </Link>
+            </nav>
+          )}
+        </div>
+
+        {/* Mobile Burger Button */}
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="cursor-pointer focus:outline-none md:hidden"
+          aria-label="Toggle menu"
+        >
+          {isMenuOpen ? (
+            // X icon
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            // Hamburger icon
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          )}
+        </button>
       </div>
+
+      {/* Mobile Menu */}
+      {isMenuOpen && (
+        <div className="myHeight absolute z-50 w-full border-t bg-white md:hidden">
+          <div
+            className={`myHeight flex flex-col ${menuResponsiveBtns} gap-4 p-4`}
+          >
+            <div>
+              {user && (
+                <NavLink
+                  to="/tasks"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block w-full cursor-pointer rounded border border-black bg-black px-3 py-2 text-sm text-white transition hover:bg-white hover:text-black`}
+                >
+                  Tasks
+                </NavLink>
+              )}
+            </div>
+
+            <div>
+              {loading ? null : user ? (
+                <>
+                  <div className="mb-2 text-sm text-gray-600">
+                    Hello, {displayName}
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full cursor-pointer rounded bg-red-400 px-3 py-2 text-sm text-white transition hover:bg-red-500"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <nav className="flex flex-col gap-3 text-sm">
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`block w-full cursor-pointer rounded border border-black bg-black px-3 py-2 text-sm text-white transition hover:bg-white hover:text-black`}
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/signup"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`block w-full cursor-pointer rounded border border-black bg-black px-3 py-2 text-sm text-white transition hover:bg-white hover:text-black`}
+                  >
+                    Sign up
+                  </Link>
+                </nav>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

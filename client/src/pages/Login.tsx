@@ -1,4 +1,4 @@
-import { useNavigate, useLocation, Link } from "react-router";
+import { useNavigate, useLocation, Link, Navigate } from "react-router";
 import { useState } from "react";
 import { api } from "../lib/api";
 import Button from "../components/Button";
@@ -11,14 +11,22 @@ export default function Login() {
   const [email, setEmail] = useState<string>(loc?.state?.email || "");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
-  const { fetchUser } = useAuth();
+  const { fetchUser, user, loading } = useAuth();
+
+  if (loading)
+    return (
+      <div className="myHeight flex w-full items-center justify-center">
+        Loading...
+      </div>
+    );
+  if (user) return <Navigate to="/" replace />;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await api.post("/auth/login", { email, password });
       await fetchUser();
-      navigate("/tasks");
+      navigate("/");
       toast.success("Logged in successfully");
     } catch (e: any) {
       setMsg(e?.response?.data?.message || "Login failed");

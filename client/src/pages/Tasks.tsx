@@ -96,7 +96,7 @@ export default function Tasks() {
       <div className="flex flex-col-reverse gap-4 md:flex-row-reverse">
         <div className="flex gap-2">
           <input
-            className="w-full rounded border p-2"
+            className="w-full rounded border p-2 text-sm"
             placeholder="Search"
             value={search}
             onChange={(e) => {
@@ -107,7 +107,7 @@ export default function Tasks() {
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
-            className="rounded border p-2"
+            className="rounded border p-2 text-sm"
           >
             <option value="new">Newest</option>
             <option value="old">Oldest</option>
@@ -116,12 +116,12 @@ export default function Tasks() {
 
         <form onSubmit={add} className="flex flex-1 gap-2">
           <input
-            className="flex-1 rounded border p-2"
+            className="flex-1 rounded border p-2 text-sm"
             placeholder="New Task"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
-          <button className="cursor-pointer rounded border border-black bg-black px-4 py-2 text-white transition hover:bg-white hover:text-black">
+          <button className="cursor-pointer rounded border border-black bg-black px-4 py-2 text-sm text-white transition hover:bg-white hover:text-black">
             Add
           </button>
         </form>
@@ -137,18 +137,21 @@ export default function Tasks() {
                   type="checkbox"
                   checked={t.done}
                   onChange={() => toggle(t._id, t.done)}
+                  className="accent-green-400"
                 />
                 <div
                   className={`flex-1 ${t.done ? "text-gray-400 line-through" : ""}`}
                 >
-                  <div className="font-medium capitalize">{t.title}</div>
+                  <div className="text-sm font-medium capitalize">
+                    {t.title}
+                  </div>
                   <div className="text-xs text-gray-500">
                     {new Date(t.createdAt).toLocaleString()}
                   </div>
                 </div>
                 <button
                   onClick={() => remove(t._id)}
-                  className="cursor-pointer text-sm text-red-600 hover:text-red-800"
+                  className="cursor-pointer text-sm text-red-400 hover:text-red-500"
                 >
                   Delete
                 </button>

@@ -5,16 +5,14 @@ import Login from "../pages/Login";
 import Tasks from "../pages/Tasks";
 import ProtectedRoute from "./ProtectedRoute";
 import MainLayout from "../layout/MainLayout";
+import Homepage from "../pages/Homepage";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <MainLayout />,
     children: [
-      { path: "/signup", element: <Signup /> },
-      { path: "/verify", element: <Verify /> },
-      { path: "/login", element: <Login /> },
-
+      { index: true, path: "/", element: <Homepage /> },
       {
         path: "/tasks",
         element: (
@@ -23,8 +21,10 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-
-      { path: "*", element: <Navigate to="/login" replace /> },
+      { path: "/signup", element: <Signup /> },
+      { path: "/verify", element: <Verify /> },
+      { path: "/login", element: <Login /> },
+      { path: "*", element: <Navigate to="/" replace /> },
     ],
   },
 ]);
