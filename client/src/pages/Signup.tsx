@@ -23,10 +23,8 @@ export default function Signup() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post("/auth/signup", { email, password });
-      toast.success(
-        "Signup successful, Check your email for verification code.",
-      );
+      const res = await api.post("/auth/signup", { email, password });
+      toast.success(res.data.message);
       navigate("/verify", { state: { email } });
     } catch (e: any) {
       setMsg(e?.response?.data?.message || "Failed");

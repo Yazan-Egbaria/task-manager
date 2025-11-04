@@ -30,11 +30,18 @@ router.post("/signup", async (req, res) => {
     expiresAt: inMinutes(15),
   });
 
-  await sendVerificationEmail(email, code);
+  const emailJob = sendVerificationEmail(email, code).catch((err) =>
+    console.error("Email send failed:", err?.message || err)
+  );
+  const MAX_WAIT_MS = 800;
+  await Promise.race([
+    emailJob,
+    new Promise((r) => setTimeout(r, MAX_WAIT_MS)),
+  ]);
 
   return res.status(201).json({
     ok: true,
-    message: "Signup successful. Check email for verification code.",
+    message: "Signup successful, Check your email for verification code.",
   });
 });
 
