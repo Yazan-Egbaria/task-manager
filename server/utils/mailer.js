@@ -26,15 +26,14 @@ export async function sendVerificationEmail(to, code) {
   });
 
   if (process.env.NODE_ENV !== "production") {
-    console.log(`📩 [MOCK EMAIL] To: ${to} | Code: ${code}`);
+    console.log(`[MOCK EMAIL] To: ${to} | Code: ${code}`);
     return;
   }
 
   await resend.emails.send({
-    from: "Task Manager <onboarding@resend.dev>",
+    from: process.env.EMAIL_FROM || "Task Manager <onboarding@resend.dev>",
     to,
     subject,
     html,
   });
-  console.log(`✅ Email sent to ${to}`);
 }
