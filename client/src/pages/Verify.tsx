@@ -31,6 +31,7 @@ export default function Verify() {
           className="w-full rounded border p-2"
           placeholder="Email"
           value={email}
+          disabled
           onChange={(e) => setEmail(e.target.value)}
         />
         <input
