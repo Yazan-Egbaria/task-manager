@@ -7,57 +7,100 @@ router.use(requireAuth);
 
 // Create task
 router.post("/", async (req, res) => {
-  const task = await Task.create({ ...req.body, userId: req.user.id });
-  res.status(201).json(task);
+  try {
+    const { title, description, status, priority } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ message: "Title is required" });
+    }
+
+    const task = await Task.create({
+      userId: req.user.id,
+      title: title.trim(),
+      description: description?.trim() || "",
+      status: status || "todo",
+      priority: priority || "medium",
+    });
+
+    res.status(201).json(task);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to create task" });
+  }
 });
 
 // List tasks
 router.get("/", async (req, res) => {
-  const { page = 1, search = "", sort = "new" } = req.query;
-  const pageSize = 10;
+  try {
+    const { status, priority } = req.query;
 
-  const filter = { userId: req.user.id };
-  if (search) {
-    filter.$or = [
-      { title: { $regex: search, $options: "i" } },
-      { description: { $regex: search, $options: "i" } },
-    ];
+    const filter = { userId: req.user.id };
+
+    if (status) {
+      filter.status = status;
+    }
+    if (priority) {
+      filter.priority = priority;
+    }
+
+    const items = await Task.find(filter).sort({ createdAt: -1 });
+
+    res.json({ items, total: items.length });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load tasks" });
   }
-
-  const sortObj = sort === "old" ? { createdAt: 1 } : { createdAt: -1 };
-
-  const items = await Task.find(filter)
-    .sort(sortObj)
-    .skip((+page - 1) * pageSize)
-    .limit(pageSize);
-
-  const total = await Task.countDocuments(filter);
-
-  res.json({ items, total, page: +page, pageSize });
 });
 
 // Get task by id
 router.get("/:id", async (req, res) => {
-  const t = await Task.findOne({ _id: req.params.id, userId: req.user.id });
-  if (!t) return res.status(404).json({ message: "Not found" });
-  res.json(t);
+  try {
+    const t = await Task.findOne({ _id: req.params.id, userId: req.user.id });
+    if (!t) return res.status(404).json({ message: "Task not found" });
+    res.json(t);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load task" });
+  }
 });
 
 // Update task
 router.put("/:id", async (req, res) => {
-  const t = await Task.findOneAndUpdate(
-    { _id: req.params.id, userId: req.user.id },
-    req.body,
-    { new: true }
-  );
-  if (!t) return res.status(404).json({ message: "Not found" });
-  res.json(t);
+  try {
+    const { title, description, status, priority } = req.body;
+
+    const updateData = {};
+    if (title !== undefined) updateData.title = title.trim();
+    if (description !== undefined) updateData.description = description.trim();
+    if (status !== undefined) updateData.status = status;
+    if (priority !== undefined) updateData.priority = priority;
+
+    const t = await Task.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.id },
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!t) return res.status(404).json({ message: "Task not found" });
+    res.json(t);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update task" });
+  }
 });
 
 // Delete task
 router.delete("/:id", async (req, res) => {
-  await Task.deleteOne({ _id: req.params.id, userId: req.user.id });
-  res.status(204).end();
+  try {
+    const result = await Task.deleteOne({
+      _id: req.params.id,
+      userId: req.user.id,
+    });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    res.status(204).end();
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete task" });
+  }
 });
 
 export default router;

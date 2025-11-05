@@ -1,40 +1,54 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { toast } from "react-toastify";
+import type { ColumnId, Task } from "../components/tasksPage/types";
+import TaskColumn from "../components/tasksPage/TaskColumn";
+import TaskModal from "../components/tasksPage/TaskModal";
 
-type Task = {
-  _id: string;
-  title: string;
-  description?: string;
-  done: boolean;
-  createdAt: string;
+const STATUS_COLUMNS = [
+  { id: "todo" as const, label: "To Do", color: "bg-blue-500" },
+  { id: "in-progress" as const, label: "In Progress", color: "bg-yellow-500" },
+  { id: "completed" as const, label: "Completed", color: "bg-green-500" },
+];
+
+const PRIORITY_CONFIG: Record<Task["priority"], { bg: string; text: string }> =
+  {
+    high: { bg: "bg-rose-100", text: "text-rose-700" },
+    medium: { bg: "bg-amber-100", text: "text-amber-700" },
+    low: { bg: "bg-slate-100", text: "text-slate-700" },
+  };
+
+const STATUS_LABELS: Record<Task["status"], string> = {
+  todo: "Not Started",
+  "in-progress": "In Progress",
+  completed: "Completed",
 };
 
 export default function Tasks() {
+  // form/modal state
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<Task["priority"]>("medium");
+  const [editStatus, setEditStatus] = useState<Task["status"]>("todo");
+
+  // items
   const [items, setItems] = useState<Task[]>([]);
+  const itemsRef = useRef<Task[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
-  const [search, setSearch] = useState(searchParams.get("search") || "");
-  const [sort, setSort] = useState(searchParams.get("sort") || "new");
-  const [total, setTotal] = useState(0);
 
-  const pageSize = 10;
-  const totalPages = Math.ceil(total / pageSize);
+  // ui
+  const [showModal, setShowModal] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<ColumnId>("todo");
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  async function load(
-    searchTerm: string,
-    currentPage: number,
-    sortOrder: string,
-  ) {
+  // drag
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<ColumnId | null>(null);
+
+  async function load() {
     try {
-      const res = await api.get("/tasks", {
-        params: { search: searchTerm, page: currentPage, sort: sortOrder },
-      });
+      const res = await api.get("/tasks");
       setItems(res.data.items);
-      setTotal(res.data.total);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to load tasks");
     } finally {
@@ -42,25 +56,46 @@ export default function Tasks() {
     }
   }
 
-  async function add(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
+
     try {
-      await api.post("/tasks", { title });
+      if (editingTask) {
+        await api.put(`/tasks/${editingTask._id}`, {
+          title,
+          description: description.trim() || undefined,
+          priority,
+          status: editStatus,
+        });
+        toast.success("Task updated successfully");
+      } else {
+        await api.post("/tasks", {
+          title,
+          description: description.trim() || undefined,
+          status: selectedStatus,
+          priority,
+        });
+        toast.success("Task added successfully");
+      }
+
       setTitle("");
-      toast.success("Task added successfully");
-      setPage(1);
-      load(search, 1, sort);
+      setDescription("");
+      setPriority("medium");
+      setEditStatus("todo");
+      setShowModal(false);
+      setEditingTask(null);
+      load();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to add task");
+      toast.error(err.response?.data?.message || "Failed to save task");
     }
   }
 
-  async function toggle(id: string, done: boolean) {
+  async function updateStatus(id: string, newStatus: ColumnId) {
     try {
-      await api.put(`/tasks/${id}`, { done: !done });
-      toast.success("Task toggled successfully");
-      load(search, page, sort);
+      await api.put(`/tasks/${id}`, { status: newStatus });
+      toast.success("Task updated successfully");
+      load();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to update task");
     }
@@ -70,126 +105,128 @@ export default function Tasks() {
     try {
       await api.delete(`/tasks/${id}`);
       toast.success("Task deleted successfully");
-      load(search, page, sort);
+      load();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to delete task");
     }
   }
 
-  function goToPage(newPage: number) {
-    setPage(newPage);
-    load(search, newPage, sort);
+  function openEditModal(task: Task) {
+    setEditingTask(task);
+    setTitle(task.title);
+    setDescription(task.description || "");
+    setPriority(task.priority);
+    setEditStatus(task.status);
+    setShowModal(true);
+  }
+
+  function openAddModal(status: ColumnId) {
+    setEditingTask(null);
+    setTitle("");
+    setDescription("");
+    setPriority("medium");
+    setSelectedStatus(status);
+    setEditStatus("todo");
+    setShowModal(true);
+  }
+
+  function closeModal() {
+    setShowModal(false);
+    setEditingTask(null);
+    setTitle("");
+    setDescription("");
+    setPriority("medium");
+    setEditStatus("todo");
+  }
+
+  // Drag & Drop (with highlight)
+  function handleCardDragStart(task: Task) {
+    setDraggedTask(task);
+  }
+  function handleDragOver(e: React.DragEvent, colId: ColumnId) {
+    e.preventDefault();
+    setDragOverColumn(colId);
+  }
+  function handleDragEnter(e: React.DragEvent, colId: ColumnId) {
+    e.preventDefault();
+    setDragOverColumn(colId);
+  }
+  function handleDragLeave(_e: React.DragEvent, colId: ColumnId) {
+    if (dragOverColumn === colId) setDragOverColumn(null);
+  }
+  function handleDrop(e: React.DragEvent, newStatus: ColumnId) {
+    e.preventDefault();
+    if (draggedTask && draggedTask.status !== newStatus) {
+      updateStatus(draggedTask._id, newStatus);
+    }
+    setDraggedTask(null);
+    setDragOverColumn(null);
+  }
+  function handleCardDragEnd() {
+    setDraggedTask(null);
+    setDragOverColumn(null);
   }
 
   useEffect(() => {
-    const params: any = {};
-    if (search) params.search = search;
-    if (page > 1) params.page = String(page);
-    if (sort !== "new") params.sort = sort;
-    setSearchParams(params);
+    load();
+  }, []);
 
-    load(search, page, sort);
-  }, [search, page, sort]);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  const getTasksByStatus = (status: ColumnId) =>
+    items.filter((task) => task.status === status);
+
+  if (isLoading) {
+    return (
+      <div className="myHeight flex items-center justify-center">
+        <h1 className="text-xl">Loading your tasks...</h1>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full max-w-4xl space-y-6">
-      <div className="flex flex-col-reverse gap-4 md:flex-row-reverse">
-        <div className="flex gap-2">
-          <input
-            className="w-full rounded border p-2 text-sm"
-            placeholder="Search"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-          />
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            className="rounded border p-2 text-sm"
-          >
-            <option value="new">Newest</option>
-            <option value="old">Oldest</option>
-          </select>
+    <div className="myHeight w-full overflow-x-auto bg-gray-50">
+      <div className="mx-auto">
+        <div className="flex gap-4" style={{ minWidth: "1200px" }}>
+          {STATUS_COLUMNS.map((col) => (
+            <TaskColumn
+              key={col.id}
+              column={col}
+              tasks={getTasksByStatus(col.id)}
+              isActiveDrop={dragOverColumn === col.id}
+              priorityConfig={PRIORITY_CONFIG}
+              statusLabels={STATUS_LABELS}
+              onAdd={openAddModal}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onCardDragStart={handleCardDragStart}
+              onCardDragEnd={handleCardDragEnd}
+              onEditCard={openEditModal}
+              onDeleteCard={remove}
+              draggedTaskId={draggedTask?._id || null}
+            />
+          ))}
         </div>
-
-        <form onSubmit={add} className="flex flex-1 gap-2">
-          <input
-            className="flex-1 rounded border p-2 text-sm"
-            placeholder="New Task"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-          <button className="cursor-pointer rounded border border-black bg-black px-4 py-2 text-sm text-white transition hover:bg-white hover:text-black">
-            Add
-          </button>
-        </form>
       </div>
-      {isLoading ? (
-        <h1 className="mx-auto text-center text-sm">Loading your tasks</h1>
-      ) : (
-        <>
-          <ul className="divide-y rounded border bg-white">
-            {items.map((t) => (
-              <li key={t._id} className="flex items-center gap-3 p-3">
-                <input
-                  type="checkbox"
-                  checked={t.done}
-                  onChange={() => toggle(t._id, t.done)}
-                  className="accent-green-400"
-                />
-                <div
-                  className={`flex-1 ${t.done ? "text-gray-400 line-through" : ""}`}
-                >
-                  <div className="text-sm font-medium capitalize">
-                    {t.title}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {new Date(t.createdAt).toLocaleString()}
-                  </div>
-                </div>
-                <button
-                  onClick={() => remove(t._id)}
-                  className="cursor-pointer text-sm text-red-400 hover:text-red-500"
-                >
-                  Delete
-                </button>
-              </li>
-            ))}
-            {items.length === 0 && (
-              <li className="p-4 text-center text-sm text-gray-500">
-                No tasks yet.
-              </li>
-            )}
-          </ul>
-        </>
-      )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={() => goToPage(page - 1)}
-            disabled={page === 1}
-            className="cursor-pointer rounded border border-black bg-black px-3 py-1 text-white transition-all duration-300 hover:enabled:bg-white hover:enabled:text-black disabled:cursor-not-allowed disabled:opacity-20"
-          >
-            Previous
-          </button>
-
-          <span className="text-sm text-gray-600">
-            Page {page} of {totalPages}
-          </span>
-
-          <button
-            onClick={() => goToPage(page + 1)}
-            disabled={page === totalPages}
-            className="cursor-pointer rounded border border-black bg-black px-3 py-1 text-white transition hover:enabled:bg-white hover:enabled:text-black disabled:cursor-not-allowed disabled:opacity-20"
-          >
-            Next
-          </button>
-        </div>
-      )}
+      <TaskModal
+        show={showModal}
+        isEditing={!!editingTask}
+        title={title}
+        description={description}
+        priority={priority}
+        editStatus={editStatus}
+        onClose={closeModal}
+        onSubmit={handleSubmit}
+        setTitle={setTitle}
+        setDescription={setDescription}
+        setPriority={setPriority}
+        setEditStatus={setEditStatus}
+      />
     </div>
   );
 }

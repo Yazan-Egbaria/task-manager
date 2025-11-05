@@ -3,9 +3,9 @@ import Navbar from "../components/Navbar";
 
 export default function MainLayout() {
   return (
-    <div>
+    <div className="bg-gray-50">
       <Navbar />
-      <main className="paddingX myHeight mx-auto flex items-center justify-center py-16">
+      <main className="paddingX myHeight container mx-auto flex items-center justify-center py-16">
         <Outlet />
       </main>
     </div>

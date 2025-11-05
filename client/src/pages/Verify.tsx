@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "../lib/api";
 import Button from "../components/Button";
 import { toast } from "react-toastify";
@@ -11,6 +11,17 @@ export default function Verify() {
   const [code, setCode] = useState("");
   const [msg, setMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [resendTimer]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,9 +38,30 @@ export default function Verify() {
     }
   };
 
+  const handleResend = async () => {
+    if (resendTimer > 0) return;
+
+    setMsg("");
+    setIsResending(true);
+    try {
+      await api.post("/auth/resend-verification", { email });
+      toast.success("Verification code sent!");
+      setResendTimer(60);
+    } catch (e: any) {
+      setMsg(e?.response?.data?.message || "Failed to resend code");
+      toast.error("Failed to resend code");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   return (
     <div className="max-w-md">
       <h1 className="mb-4 text-2xl font-semibold">Verify your email</h1>
+      <p className="mb-4 text-sm text-gray-600">
+        Enter the 6-digit code sent to your email
+      </p>
+
       <form onSubmit={onSubmit} className="space-y-3">
         <input
           className="w-full rounded border p-2"
@@ -39,10 +71,14 @@ export default function Verify() {
           onChange={(e) => setEmail(e.target.value)}
         />
         <input
-          className="w-full rounded border p-2"
-          placeholder="6-digit code"
+          className="w-full rounded border p-2 text-center text-xl tracking-widest"
+          placeholder="000000"
           value={code}
-          onChange={(e) => setCode(e.target.value)}
+          onChange={(e) =>
+            setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+          }
+          maxLength={6}
+          disabled={isSubmitting}
         />
         <Button
           className={isSubmitting ? "cursor-not-allowed opacity-50" : ""}
@@ -50,7 +86,29 @@ export default function Verify() {
           disabled={isSubmitting}
         />
       </form>
-      {msg && <p className="mt-3 text-sm text-gray-600">{msg}</p>}
+
+      {msg && <p className="mt-3 text-sm text-red-500">{msg}</p>}
+
+      <div className="mt-4 text-center">
+        <p className="text-sm text-gray-600">
+          Didn't receive the code?{" "}
+          <button
+            onClick={handleResend}
+            disabled={isResending || resendTimer > 0}
+            className={`font-medium text-blue-600 hover:text-blue-800 ${
+              isResending || resendTimer > 0
+                ? "cursor-not-allowed opacity-50"
+                : "cursor-pointer"
+            }`}
+          >
+            {isResending
+              ? "Sending..."
+              : resendTimer > 0
+                ? `Resend in ${resendTimer}s`
+                : "Resend code"}
+          </button>
+        </p>
+      </div>
     </div>
   );
 }

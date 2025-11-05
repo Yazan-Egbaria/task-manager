@@ -68,6 +68,39 @@ router.post("/verify", async (req, res) => {
   return res.json({ ok: true, message: "Email verified" });
 });
 
+// Resend verification code
+router.post("/resend-verification", async (req, res) => {
+  const { email } = req.body || {};
+  if (!email) return res.status(400).json({ message: "Email is required" });
+
+  const user = await User.findOne({ email: email.toLowerCase().trim() });
+  if (!user) return res.status(400).json({ message: "User not found" });
+
+  if (user.emailVerifiedAt)
+    return res.status(400).json({ message: "Email already verified" });
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  await VerificationCode.create({
+    userId: user._id,
+    codeHash: sha256(code),
+    expiresAt: inMinutes(15),
+  });
+
+  const emailJob = sendVerificationEmail(email, code).catch((err) =>
+    console.error("Email send failed:", err?.message || err)
+  );
+  const MAX_WAIT_MS = 800;
+  await Promise.race([
+    emailJob,
+    new Promise((r) => setTimeout(r, MAX_WAIT_MS)),
+  ]);
+
+  return res.json({
+    ok: true,
+    message: "Verification code sent",
+  });
+});
+
 // Login api
 router.post("/login", async (req, res) => {
   const { email, password } = req.body || {};

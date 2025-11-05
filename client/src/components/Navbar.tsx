@@ -26,8 +26,8 @@ export default function Navbar() {
   const menuResponsiveBtns = user ? "justify-between" : "";
 
   return (
-    <header className="bg-white shadow-md">
-      <div className="container mx-auto flex items-center justify-between p-4">
+    <header className="border-b border-gray-300 bg-gray-50">
+      <div className="paddingX container mx-auto flex items-center justify-between py-4">
         {/* Logo */}
         <Link
           to="/"
