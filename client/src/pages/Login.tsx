@@ -12,6 +12,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
   const { fetchUser, user, loading } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (loading)
     return (
@@ -23,6 +24,7 @@ export default function Login() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       await api.post("/auth/login", { email, password });
       await fetchUser();
@@ -30,6 +32,8 @@ export default function Login() {
       toast.success("Logged in successfully");
     } catch (e: any) {
       setMsg(e?.response?.data?.message || "Login failed");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -50,7 +54,11 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <Button text="Login" />
+        <Button
+          className={isSubmitting ? "cursor-not-allowed opacity-50" : ""}
+          text={isSubmitting ? "Logging In..." : "Login"}
+          disabled={isSubmitting}
+        />
       </form>
       {msg && <p className="mt-3 text-sm text-red-600">{msg}</p>}
       <p className="mt-3 text-sm">

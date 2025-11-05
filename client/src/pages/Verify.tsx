@@ -10,16 +10,20 @@ export default function Verify() {
   const [email, setEmail] = useState<string>(loc?.state?.email || "");
   const [code, setCode] = useState("");
   const [msg, setMsg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg("");
+    setIsSubmitting(true);
     try {
       await api.post("/auth/verify", { email, code });
       toast.success("Email verified. You can now log in.");
       navigate("/login", { state: { email } });
     } catch (e: any) {
       setMsg(e?.response?.data?.message || "Verification failed");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -40,7 +44,11 @@ export default function Verify() {
           value={code}
           onChange={(e) => setCode(e.target.value)}
         />
-        <Button text="Verify" />
+        <Button
+          className={isSubmitting ? "cursor-not-allowed opacity-50" : ""}
+          text={isSubmitting ? "Verifying..." : "Verify"}
+          disabled={isSubmitting}
+        />
       </form>
       {msg && <p className="mt-3 text-sm text-gray-600">{msg}</p>}
     </div>

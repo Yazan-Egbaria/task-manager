@@ -6,13 +6,20 @@ export default function Navbar() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleLogout() {
-    await logout();
-    navigate("/");
-    setIsMenuOpen(false);
+    setIsSubmitting(true);
+    try {
+      await logout();
+      navigate("/");
+      setIsMenuOpen(false);
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
-
   const username = user?.email?.split("@")[0] || "Guest";
   const displayName = username.charAt(0).toUpperCase() + username.slice(1);
 
@@ -50,9 +57,10 @@ export default function Navbar() {
               </span>
               <button
                 onClick={handleLogout}
-                className="cursor-pointer rounded bg-red-400 px-3 py-1 text-sm text-white transition hover:bg-red-500"
+                disabled={isSubmitting}
+                className={`rounded bg-red-400 px-3 py-1 text-sm text-white transition enabled:cursor-pointer enabled:hover:bg-red-500 ${isSubmitting ? "cursor-not-allowed opacity-50" : ""}`}
               >
-                Logout
+                {isSubmitting ? "Logging Out..." : "Logout"}
               </button>
             </div>
           ) : (
@@ -129,9 +137,10 @@ export default function Navbar() {
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="w-full cursor-pointer rounded bg-red-400 px-3 py-2 text-sm text-white transition hover:bg-red-500"
+                    disabled={isSubmitting}
+                    className={`w-full rounded bg-red-400 px-3 py-2 text-sm text-white transition hover:bg-red-500 enabled:cursor-pointer ${isSubmitting ? "cursor-not-allowed opacity-50" : ""}`}
                   >
-                    Logout
+                    {isSubmitting ? "Logging Out..." : "Logout"}
                   </button>
                 </>
               ) : (
