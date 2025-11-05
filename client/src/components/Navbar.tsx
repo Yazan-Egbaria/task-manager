@@ -1,9 +1,9 @@
 import { Link, NavLink, useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Navbar() {
-  const { user, loading, logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,6 +24,17 @@ export default function Navbar() {
   const displayName = username.charAt(0).toUpperCase() + username.slice(1);
 
   const menuResponsiveBtns = user ? "justify-between" : "";
+
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
 
   return (
     <header className="border-b border-gray-300 bg-gray-50">
@@ -49,31 +60,27 @@ export default function Navbar() {
         )}
 
         {/* Desktop Menu */}
-        <div className="hidden items-center gap-4 md:flex">
-          {loading ? null : user ? (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-600">
-                Hello, {displayName}
-              </span>
-              <button
-                onClick={handleLogout}
-                disabled={isSubmitting}
-                className={`rounded bg-red-400 px-3 py-1 text-sm text-white transition enabled:cursor-pointer enabled:hover:bg-red-500 ${isSubmitting ? "cursor-not-allowed opacity-50" : ""}`}
-              >
-                {isSubmitting ? "Logging Out..." : "Logout"}
-              </button>
-            </div>
-          ) : (
-            <nav className="flex gap-3 text-sm">
-              <Link to="/signup" className="hover:underline">
-                Sign up
-              </Link>
-              <Link to="/login" className="hover:underline">
-                Login
-              </Link>
-            </nav>
-          )}
-        </div>
+        {user ? (
+          <div className="hidden items-center gap-3 md:flex">
+            <span className="text-sm text-gray-600">Hello, {displayName}</span>
+            <button
+              onClick={handleLogout}
+              disabled={isSubmitting}
+              className={`rounded bg-red-400 px-3 py-1 text-sm text-white transition enabled:cursor-pointer enabled:hover:bg-red-500 ${isSubmitting ? "cursor-not-allowed opacity-50" : ""}`}
+            >
+              {isSubmitting ? "Logging Out..." : "Logout"}
+            </button>
+          </div>
+        ) : (
+          <nav className="hidden gap-3 text-sm md:flex">
+            <Link to="/signup" className="hover:underline">
+              Sign up
+            </Link>
+            <Link to="/login" className="hover:underline">
+              Login
+            </Link>
+          </nav>
+        )}
 
         {/* Mobile Burger Button */}
         <button
@@ -113,7 +120,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="myHeight absolute z-50 w-full border-t bg-white md:hidden">
+        <div className="absolute z-50 min-h-screen w-full border-t border-gray-300 bg-white md:hidden">
           <div
             className={`myHeight flex flex-col ${menuResponsiveBtns} gap-4 p-4`}
           >
@@ -130,7 +137,7 @@ export default function Navbar() {
             </div>
 
             <div>
-              {loading ? null : user ? (
+              {user ? (
                 <>
                   <div className="mb-2 text-sm text-gray-600">
                     Hello, {displayName}
@@ -148,14 +155,14 @@ export default function Navbar() {
                   <Link
                     to="/login"
                     onClick={() => setIsMenuOpen(false)}
-                    className={`block w-full cursor-pointer rounded border border-black bg-black px-3 py-2 text-sm text-white transition hover:bg-white hover:text-black`}
+                    className="block w-full cursor-pointer rounded border border-black bg-black px-3 py-2 text-sm text-white transition hover:bg-white hover:text-black"
                   >
                     Login
                   </Link>
                   <Link
                     to="/signup"
                     onClick={() => setIsMenuOpen(false)}
-                    className={`block w-full cursor-pointer rounded border border-black bg-black px-3 py-2 text-sm text-white transition hover:bg-white hover:text-black`}
+                    className="block w-full cursor-pointer rounded border border-black bg-black px-3 py-2 text-sm text-white transition hover:bg-white hover:text-black"
                   >
                     Sign up
                   </Link>

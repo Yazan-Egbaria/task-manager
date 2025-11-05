@@ -2,7 +2,7 @@
 
 A **full-stack task management app** with secure authentication, task CRUD, and email verification.
 
-🔗 **Live Demo:** [task-manager-umber-alpha.vercel.app](https://task-manager-umber-alpha.vercel.app)
+🔗 **Live Demo:** [https://www.taskmanagerapp.info/](https://www.taskmanagerapp.info/)
 
 **Test Account**
 
