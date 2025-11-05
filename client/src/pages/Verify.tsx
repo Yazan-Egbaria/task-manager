@@ -7,7 +7,11 @@ import { toast } from "react-toastify";
 export default function Verify() {
   const navigate = useNavigate();
   const loc = useLocation();
-  const [email, setEmail] = useState<string>(loc?.state?.email || "");
+
+  const initialEmail =
+    loc?.state?.email || localStorage.getItem("pendingEmail") || "";
+
+  const [email, setEmail] = useState<string>(initialEmail);
   const [code, setCode] = useState("");
   const [msg, setMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,6 +34,7 @@ export default function Verify() {
     try {
       await api.post("/auth/verify", { email, code });
       toast.success("Email verified. You can now log in.");
+      localStorage.removeItem("pendingEmail");
       navigate("/login", { state: { email } });
     } catch (e: any) {
       setMsg(e?.response?.data?.message || "Verification failed");

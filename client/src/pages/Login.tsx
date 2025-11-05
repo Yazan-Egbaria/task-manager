@@ -31,7 +31,16 @@ export default function Login() {
       navigate("/");
       toast.success("Logged in successfully");
     } catch (e: any) {
-      setMsg(e?.response?.data?.message || "Login failed");
+      const msg = e?.response?.data?.message || "Login failed";
+
+      if (e?.response?.status === 403 && /Email not verified/i.test(msg)) {
+        localStorage.setItem("pendingEmail", email);
+        toast.info("Please verify your email before logging in.");
+        navigate("/verify", { state: { email } });
+        return;
+      }
+
+      setMsg(msg);
     } finally {
       setIsSubmitting(false);
     }

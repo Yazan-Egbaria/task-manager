@@ -27,6 +27,7 @@ export default function Signup() {
     try {
       const res = await api.post("/auth/signup", { email, password });
       toast.success(res.data.message);
+      localStorage.setItem("pendingEmail", email);
       navigate("/verify", { state: { email } });
     } catch (e: any) {
       setMsg(e?.response?.data?.message || "Failed");
