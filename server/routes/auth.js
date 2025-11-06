@@ -6,6 +6,7 @@ import User from "../models/User.js";
 import VerificationCode from "../models/VerificationCode.js";
 import { requireAuth } from "../middlewear/auth.js";
 import { sendVerificationEmail } from "../utils/mailer.js";
+import { checkLoginIp } from "../middlewear/checkLoginIp.js";
 
 const router = Router();
 
@@ -102,7 +103,7 @@ router.post("/resend-verification", async (req, res) => {
 });
 
 // Login api
-router.post("/login", async (req, res) => {
+router.post("/login", checkLoginIp, async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password)
     return res.status(400).json({ message: "Email and password are required" });
